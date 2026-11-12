@@ -22,7 +22,7 @@ const {
   deleteCityMock: vi.fn(),
 }));
 
-vi.mock("../src/services.js", () => ({
+vi.mock("../../src/services.js", () => ({
   searchCities: searchCitiesMock,
   listCities: listCitiesMock,
   createCity: createCityMock,
@@ -72,7 +72,7 @@ describe("index UI", () => {
 
   async function openFlightsSearch(): Promise<void> {
     window.history.replaceState(null, "", "/#/flights");
-    await import("../src/index.ts");
+    await import("../../src/index.ts");
     await vi.waitFor(() =>
       expect(document.querySelector("#status")).not.toBeNull(),
     );
@@ -80,14 +80,14 @@ describe("index UI", () => {
 
   async function openCityAdmin(): Promise<void> {
     window.history.replaceState(null, "", "/#/cities");
-    await import("../src/index.ts");
+    await import("../../src/index.ts");
     await vi.waitFor(() =>
       expect(document.querySelector("#create-city-form")).not.toBeNull(),
     );
   }
 
   it("shows a home menu that links to cities and flight search", async () => {
-    await import("../src/index.ts");
+    await import("../../src/index.ts");
 
     expect(document.querySelector("h1")?.textContent).toBe("¿A dónde quieres volar?");
     expect(document.querySelector('a[href="#/cities"]')?.textContent).toContain(

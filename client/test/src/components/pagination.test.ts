@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { describe, expect, it, vi } from "vitest";
-import { createPagination } from "../src/components/pagination.js";
+import { createPagination } from "../../../src/components/pagination.js";
 
 describe("createPagination", () => {
   it("reports the current page and disables controls at the boundaries", () => {

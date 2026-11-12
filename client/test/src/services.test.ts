@@ -5,7 +5,7 @@ import {
   listCities,
   searchCities,
   updateCity,
-} from "../src/services.ts";
+} from "../../src/services.ts";
 
 const fetchMock = vi.fn();
 
