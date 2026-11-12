@@ -1,3 +1,5 @@
+import { fetchWithAuth } from "./auth.js";
+
 export interface CitySearchResults {
   cities: string[];
   total: number;
@@ -102,9 +104,10 @@ export async function updateCity(
 }
 
 export async function deleteCity(name: string): Promise<void> {
-  const response = await fetch(`${citiesApi}/${encodeURIComponent(name)}`, {
-    method: "DELETE",
-  });
+  const response = await fetchWithAuth(
+    `${citiesApi}/${encodeURIComponent(name)}`,
+    { method: "DELETE" },
+  );
   if (!response.ok) {
     throw new Error(cityRequestError(response.status, "No se pudo eliminar la ciudad."));
   }
@@ -116,7 +119,7 @@ async function requestCity(
   name: string,
   fallbackMessage: string,
 ): Promise<City> {
-  const response = await fetch(url, {
+  const response = await fetchWithAuth(url, {
     method,
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),
@@ -139,6 +142,10 @@ async function requestCity(
 }
 
 function cityRequestError(status: number, fallbackMessage: string): string {
+  if (status === 401) return "Inicia sesión para modificar ciudades.";
+  if (status === 403) {
+    return "Tu cuenta no tiene permisos para modificar ciudades.";
+  }
   if (status === 404) return "No se encontró la ciudad.";
   if (status === 409) return "Ya existe una ciudad con ese nombre.";
   if (status === 400) return "El nombre de la ciudad no es válido.";

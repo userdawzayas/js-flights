@@ -1,5 +1,5 @@
-import type { CitySearchResults } from "../services.js";
-import { searchCities } from "../services.js";
+import type { CitySearchResults } from "../services/cities.js";
+import { searchCities } from "../services/cities.js";
 
 export interface CitySearchOptions {
   idPrefix: string;

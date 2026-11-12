@@ -22,7 +22,9 @@ const {
   deleteCityMock: vi.fn(),
 }));
 
-vi.mock("../../src/services.js", () => ({
+const fetchMock = vi.fn();
+
+vi.mock("../../src/services/cities.js", () => ({
   searchCities: searchCitiesMock,
   listCities: listCitiesMock,
   createCity: createCityMock,
@@ -50,7 +52,13 @@ describe("index UI", () => {
     header.append(navigation);
     const page = document.createElement("main");
     page.id = "page-content";
+    const authControls = document.createElement("div");
+    authControls.id = "auth-controls";
+    header.append(authControls);
     document.body.replaceChildren(header, page);
+    sessionStorage.clear();
+    vi.stubGlobal("fetch", fetchMock);
+    fetchMock.mockReset();
     searchCitiesMock.mockReset();
     listCitiesMock.mockReset();
     listCitiesMock.mockResolvedValue({
@@ -67,6 +75,8 @@ describe("index UI", () => {
 
   afterEach(() => {
     document.body.replaceChildren();
+    sessionStorage.clear();
+    vi.unstubAllGlobals();
     vi.restoreAllMocks();
   });
 
@@ -82,6 +92,25 @@ describe("index UI", () => {
     window.history.replaceState(null, "", "/#/cities");
     await import("../../src/index.ts");
     await vi.waitFor(() =>
+      expect(document.querySelector("#login-form")).not.toBeNull(),
+    );
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          accessToken: "admin-token",
+          tokenType: "Bearer",
+          expiresIn: 3600,
+          user: { name: "admin", role: "ADMIN" },
+        }),
+        { status: 200 },
+      ),
+    );
+    document.querySelector<HTMLInputElement>("#login-name")!.value = "admin";
+    document.querySelector<HTMLInputElement>("#login-password")!.value = "admin";
+    document.querySelector<HTMLFormElement>("#login-form")!.dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true }),
+    );
+    await vi.waitFor(() =>
       expect(document.querySelector("#create-city-form")).not.toBeNull(),
     );
   }
@@ -96,6 +125,39 @@ describe("index UI", () => {
     expect(document.querySelector('a[href="#/flights"]')?.textContent).toContain(
       "Buscar vuelos",
     );
+  });
+
+  it("denies city administration to a USER account", async () => {
+    window.history.replaceState(
+      null,
+      "",
+      "/#/login?returnTo=%2Fcities",
+    );
+    fetchMock.mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          accessToken: "user-token",
+          tokenType: "Bearer",
+          expiresIn: 3600,
+          user: { name: "user", role: "USER" },
+        }),
+        { status: 200 },
+      ),
+    );
+    await import("../../src/index.ts");
+
+    document.querySelector<HTMLInputElement>("#login-name")!.value = "user";
+    document.querySelector<HTMLInputElement>("#login-password")!.value = "user";
+    document.querySelector<HTMLFormElement>("#login-form")!.dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true }),
+    );
+
+    await vi.waitFor(() =>
+      expect(document.querySelector("h1")?.textContent).toBe(
+        "Acceso restringido",
+      ),
+    );
+    expect(document.querySelector("#create-city-form")).toBeNull();
   });
 
   it("requests matching cities and updates selection status", async () => {

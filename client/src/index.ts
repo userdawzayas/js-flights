@@ -1,4 +1,6 @@
+import { authSessionExpiredEvent, getAuthSession, logout } from "./auth.ts";
 import { createCityAdmin } from "./components/city-admin.ts";
+import { createLoginView } from "./components/login.ts";
 import { createFlightSearchView } from "./components/city-search.ts";
 
 const page = requiredElement<HTMLElement>(
@@ -10,6 +12,11 @@ const header = requiredElement<HTMLElement>(
   document,
   ".site-header",
   "No se encontró la navegación principal.",
+);
+const   authControls = requiredElement<HTMLElement>(
+  document,
+  "#auth-controls",
+  "No se encontraron los controles de sesión.",
 );
 
 const handleRouteLinkClick = (event: MouseEvent): void => {
@@ -32,6 +39,90 @@ const handleRouteLinkClick = (event: MouseEvent): void => {
 
 header.addEventListener("click", handleRouteLinkClick);
 page.addEventListener("click", handleRouteLinkClick);
+
+function renderAuthControls(): void {
+  authControls.replaceChildren();
+  const session = getAuthSession();
+  if (!session) {
+    const loginLink = document.createElement("a");
+    loginLink.href = "#/login";
+    loginLink.dataset.route = "";
+    loginLink.textContent = "Iniciar sesión";
+    authControls.append(loginLink);
+    return;
+  }
+
+  const accountName = document.createElement("span");
+  accountName.className = "account-name";
+  accountName.textContent = `${session.user.name} · ${session.user.role}`;
+  const logoutButton = document.createElement("button");
+  logoutButton.type = "button";
+  logoutButton.textContent = "Cerrar sesión";
+  logoutButton.addEventListener("click", () => {
+    logout();
+    const route = getCurrentRoute();
+    renderAuthControls();
+    if (route.path === "/cities") {
+      navigateToLogin("/cities");
+    } else {
+      renderPage();
+    }
+  });
+  authControls.append(accountName, logoutButton);
+}
+
+function getCurrentRoute(): {
+  path: "/" | "/cities" | "/flights" | "/login";
+  returnTo: "/" | "/cities" | "/flights";
+} {
+  const [requestedPath = "/", query = ""] = window.location.hash
+    .slice(1)
+    .split("?", 2);
+  const path =
+    requestedPath === "/cities" ||
+    requestedPath === "/flights" ||
+    requestedPath === "/login"
+      ? requestedPath
+      : "/";
+  const requestedReturnTo = new URLSearchParams(query).get("returnTo");
+  const returnTo =
+    requestedReturnTo === "/cities" || requestedReturnTo === "/flights"
+      ? requestedReturnTo
+      : "/";
+  return { path, returnTo };
+}
+
+function navigateTo(route: string): void {
+  const url = new URL(window.location.href);
+  url.hash = route;
+  window.history.replaceState(null, "", url);
+  renderPage();
+}
+
+function navigateToLogin(returnTo: "/cities"): void {
+  const route = `/login?returnTo=${encodeURIComponent(returnTo)}`;
+  const url = new URL(window.location.href);
+  url.hash = route;
+  window.history.replaceState(null, "", url);
+  renderLogin(returnTo);
+}
+
+function renderLogin(returnTo: "/" | "/cities" | "/flights"): void {
+  page.replaceChildren(createLoginView(() => navigateTo(returnTo)));
+}
+
+function renderUnauthorized(): void {
+  const section = document.createElement("section");
+  section.className = "page-section";
+  const heading = document.createElement("h1");
+  heading.textContent = "Acceso restringido";
+  const message = document.createElement("p");
+  message.className = "intro";
+  message.textContent =
+    "Tu cuenta no tiene permisos de administrador para gestionar ciudades.";
+  section.append(heading, message);
+  page.replaceChildren(section);
+}
 
 function renderHome(): void {
   const section = document.createElement("section");
@@ -75,10 +166,20 @@ function renderFlightSearch(): void {
 }
 
 function renderPage(): void {
-  const route = window.location.hash.slice(1) || "/";
-  if (route === "/cities") {
-    renderCityAdmin();
-  } else if (route === "/flights") {
+  renderAuthControls();
+  const route = getCurrentRoute();
+  if (route.path === "/cities") {
+    const session = getAuthSession();
+    if (!session) {
+      navigateToLogin("/cities");
+    } else if (session.user.role !== "ADMIN") {
+      renderUnauthorized();
+    } else {
+      renderCityAdmin();
+    }
+  } else if (route.path === "/login") {
+    renderLogin(route.returnTo);
+  } else if (route.path === "/flights") {
     renderFlightSearch();
   } else {
     renderHome();
@@ -129,4 +230,10 @@ function createActionCard(
 }
 
 window.addEventListener("hashchange", renderPage);
+window.addEventListener(authSessionExpiredEvent, () => {
+  renderAuthControls();
+  if (getCurrentRoute().path === "/cities") {
+    navigateToLogin("/cities");
+  }
+});
 renderPage();

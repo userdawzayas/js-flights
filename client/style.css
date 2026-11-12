@@ -52,6 +52,35 @@ nav a:focus-visible {
   text-decoration: underline;
 }
 
+.auth-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-family: Arial, sans-serif;
+}
+
+.auth-controls a {
+  color: #344a41;
+  font-size: 14px;
+  text-decoration: none;
+}
+
+.auth-controls a:hover,
+.auth-controls a:focus-visible {
+  color: #28715c;
+  text-decoration: underline;
+}
+
+.account-name {
+  color: #53665e;
+  font-size: 12px;
+}
+
+.auth-controls button {
+  min-height: 34px;
+  padding: 0 10px;
+}
+
 #page-content {
   width: min(100% - 40px, 680px);
   margin: 9vh auto 80px;
@@ -137,6 +166,43 @@ h1 {
   font-family: Arial, sans-serif;
 }
 
+.login-page {
+  font-family: Arial, sans-serif;
+}
+
+.login-form {
+  display: grid;
+  max-width: 420px;
+  gap: 10px;
+  margin-top: 24px;
+}
+
+.login-form input {
+  min-height: 46px;
+  padding: 0 12px;
+  border: 1px solid #aebdb6;
+  border-radius: 4px;
+  background: #fff;
+  color: #172f2b;
+  font: 15px Arial, sans-serif;
+}
+
+.login-form input:focus-visible {
+  outline: 3px solid #8cc9ad;
+  outline-offset: 2px;
+}
+
+.login-message {
+  min-height: 20px;
+  margin: 4px 0;
+  color: #53665e;
+  font-size: 13px;
+}
+
+.login-message[data-error="true"] {
+  color: #9a3328;
+}
+
 .form-row {
   display: flex;
   gap: 10px;
@@ -172,6 +238,11 @@ button {
 
 button:hover {
   background: #1d5b49;
+}
+
+button:disabled {
+  cursor: wait;
+  opacity: 0.65;
 }
 
 button.secondary {
@@ -326,9 +397,13 @@ input[type="search"]:focus-visible {
   .site-header {
     width: min(100% - 28px, 960px);
     min-height: 68px;
+    flex-wrap: wrap;
+    padding: 12px 0;
   }
 
   nav {
+    order: 2;
+    width: 100%;
     gap: 12px;
   }
 

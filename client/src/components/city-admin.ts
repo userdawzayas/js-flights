@@ -3,7 +3,7 @@ import {
   deleteCity,
   listCities,
   updateCity,
-} from "../services.js";
+} from "../services/cities.js";
 import { createPagination } from "./pagination.js";
 
 export function createCityAdmin(): HTMLElement {

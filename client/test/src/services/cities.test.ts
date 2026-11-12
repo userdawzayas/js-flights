@@ -1,16 +1,19 @@
+// @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { login } from "../../../src/services/auth.ts";
 import {
   createCity,
   deleteCity,
   listCities,
   searchCities,
   updateCity,
-} from "../../src/services.ts";
+} from "../../../src/services/cities.ts";
 
 const fetchMock = vi.fn();
 
 describe("searchCities", () => {
   beforeEach(() => {
+    sessionStorage.clear();
     vi.stubGlobal("fetch", fetchMock);
   });
 
@@ -20,6 +23,7 @@ describe("searchCities", () => {
     });
 
     afterEach(() => {
+      sessionStorage.clear();
       vi.unstubAllGlobals();
       vi.clearAllMocks();
     });
@@ -35,6 +39,32 @@ describe("searchCities", () => {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: "Madrid" }),
       });
+    });
+
+    it("sends the bearer token with city write requests", async () => {
+      fetchMock
+        .mockResolvedValueOnce(
+          new Response(
+            JSON.stringify({
+              accessToken: "admin-token",
+              tokenType: "Bearer",
+              expiresIn: 3600,
+              user: { name: "admin", role: "ADMIN" },
+            }),
+            { status: 200 },
+          ),
+        )
+        .mockResolvedValueOnce(
+          new Response(JSON.stringify({ name: "Madrid" }), { status: 201 }),
+        );
+      await login("admin", "admin");
+
+      await expect(createCity("Madrid")).resolves.toEqual({ name: "Madrid" });
+
+      const requestOptions = fetchMock.mock.calls[1]?.[1];
+      expect(new Headers(requestOptions?.headers).get("Authorization")).toBe(
+        "Bearer admin-token",
+      );
     });
 
     it("updates and deletes a city using an encoded name", async () => {
@@ -91,6 +121,7 @@ describe("searchCities", () => {
   });
 
   afterEach(() => {
+    sessionStorage.clear();
     vi.unstubAllGlobals();
     vi.clearAllMocks();
   });

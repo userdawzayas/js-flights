@@ -16,6 +16,34 @@ async function mockApi(page) {
       return;
     }
 
+    if (
+      url.origin === "http://localhost:3000" &&
+      url.pathname === "/auth/login" &&
+      route.request().method() === "POST"
+    ) {
+      const { name, password } = route.request().postDataJSON();
+      if (
+        (name !== "admin" && name !== "user") ||
+        password !== name
+      ) {
+        await route.fulfill({
+          status: 401,
+          json: { error: "Credenciales incorrectas." },
+        });
+        return;
+      }
+
+      await route.fulfill({
+        json: {
+          accessToken: `${name}-test-token`,
+          tokenType: "Bearer",
+          expiresIn: 3600,
+          user: { name, role: name === "admin" ? "ADMIN" : "USER" },
+        },
+      });
+      return;
+    }
+
     if (url.origin !== "http://localhost:3000" || !url.pathname.startsWith("/cities")) {
       await route.abort();
       return;
@@ -23,6 +51,17 @@ async function mockApi(page) {
 
     const request = route.request();
     const method = request.method();
+    if (method !== "GET") {
+      if (!request.headers()["authorization"]) {
+        await route.fulfill({ status: 401, json: { error: "unauthenticated" } });
+        return;
+      }
+      if (request.headers()["authorization"] !== "Bearer admin-test-token") {
+        await route.fulfill({ status: 403, json: { error: "forbidden" } });
+        return;
+      }
+    }
+
     if (url.pathname === "/cities" && method === "GET") {
       const query = url.searchParams.get("search");
       if (query !== null) {
@@ -206,6 +245,10 @@ test("navigates to city administration and completes CRUD without a database", a
     .toBeVisible();
   await page.getByRole("navigation").getByRole("link", { name: "Ciudades" }).click();
 
+  await expect(page.getByRole("heading", { name: "Iniciar sesión" })).toBeVisible();
+  await page.getByLabel("Usuario").fill("admin");
+  await page.getByLabel("Contraseña").fill("admin");
+  await page.getByRole("button", { name: "Entrar" }).click();
   await expect(page.getByText("Página 1 de 2")).toBeVisible();
   await page.getByLabel("Añadir ciudad").fill("Aardvark City");
   await page.getByRole("button", { name: "Crear" }).click();
@@ -232,4 +275,18 @@ test("navigates to city administration and completes CRUD without a database", a
   await page.getByRole("button", { name: "Siguiente" }).click();
   await expect(page.getByText("Página 2 de 2")).toBeVisible();
   await expect(page.locator(".city-result")).toHaveCount(10);
+});
+
+test("denies city administration to a USER account", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("navigation").getByRole("link", { name: "Ciudades" }).click();
+  await page.getByLabel("Usuario").fill("user");
+  await page.getByLabel("Contraseña").fill("user");
+  await page.getByRole("button", { name: "Entrar" }).click();
+
+  await expect(page.getByRole("heading", { name: "Acceso restringido" }))
+    .toBeVisible();
+  await expect(page.locator("#create-city-form")).toHaveCount(0);
+  await page.getByRole("button", { name: "Cerrar sesión" }).click();
+  await expect(page.getByRole("heading", { name: "Iniciar sesión" })).toBeVisible();
 });
