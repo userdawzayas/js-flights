@@ -6,6 +6,7 @@ import { fileURLToPath } from "node:url";
 const clientRoot = path.resolve(
   path.dirname(fileURLToPath(import.meta.url)),
   "..",
+  "dist",
 );
 const mimeTypes = {
   ".css": "text/css",

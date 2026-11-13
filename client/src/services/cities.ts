@@ -1,4 +1,5 @@
 import { fetchWithAuth } from "./auth.js";
+import { apiUrl } from "./api-url.js";
 
 export interface CitySearchResults {
   cities: string[];
@@ -16,15 +17,13 @@ export interface CityListResults {
   pageSize: number;
 }
 
-const citiesApi = "http://localhost:3000/cities";
-
 export async function searchCities(
   query: string,
   signal?: AbortSignal,
 ): Promise<CitySearchResults> {
   const search = new URLSearchParams({ search: query });
   const response = await fetch(
-    `${citiesApi}?${search.toString()}`,
+    apiUrl(`cities?${search.toString()}`),
     { signal },
   );
   if (!response.ok) throw new Error("No se pudieron cargar las ciudades.");
@@ -51,12 +50,12 @@ export async function searchCities(
 }
 
 export async function createCity(name: string): Promise<City> {
-  return requestCity(citiesApi, "POST", name, "No se pudo crear la ciudad.");
+  return requestCity(apiUrl("cities"), "POST", name, "No se pudo crear la ciudad.");
 }
 
 export async function listCities(page: number): Promise<CityListResults> {
   const search = new URLSearchParams({ page: String(page) });
-  const response = await fetch(`${citiesApi}?${search.toString()}`);
+  const response = await fetch(apiUrl(`cities?${search.toString()}`));
   if (!response.ok) {
     throw new Error("No se pudieron cargar las ciudades.");
   }
@@ -96,7 +95,7 @@ export async function updateCity(
   name: string,
 ): Promise<City> {
   return requestCity(
-    `${citiesApi}/${encodeURIComponent(currentName)}`,
+    apiUrl(`cities/${encodeURIComponent(currentName)}`),
     "PUT",
     name,
     "No se pudo actualizar la ciudad.",
@@ -105,7 +104,7 @@ export async function updateCity(
 
 export async function deleteCity(name: string): Promise<void> {
   const response = await fetchWithAuth(
-    `${citiesApi}/${encodeURIComponent(name)}`,
+    apiUrl(`cities/${encodeURIComponent(name)}`),
     { method: "DELETE" },
   );
   if (!response.ok) {

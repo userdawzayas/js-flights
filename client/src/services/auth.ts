@@ -5,11 +5,10 @@ import {
   storeAuthSession,
   type AuthSession,
 } from "../auth.js";
-
-const authApi = "http://localhost:3000/auth/login";
+import { apiUrl } from "./api-url.js";
 
 export async function login(name: string, password: string): Promise<AuthSession> {
-  const response = await fetch(authApi, {
+  const response = await fetch(apiUrl("auth/login"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name: name.trim(), password }),
